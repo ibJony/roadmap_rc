@@ -10,8 +10,10 @@ import { useToastStore } from '@/lib/stores/toast-store';
 import { getSupabaseClient } from '@/lib/supabase';
 import { UserPlus, Map } from 'lucide-react';
 import Link from 'next/link';
+import { SupabaseConfigPanel } from '@/components/auth/SupabaseConfigPanel';
 
 export default function SignupPage() {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,7 +34,7 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       const supabase = getSupabaseClient(supabaseUrl, supabaseKey);
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
       if (error) throw error;
       if (data.user) {
         setUser(data.user.id, data.user.email ?? null);
@@ -56,7 +58,13 @@ export default function SignupPage() {
           <p className="mt-2 text-sm text-muted-foreground">Join RMLAB Roadmap</p>
         </div>
 
+        <SupabaseConfigPanel />
+
         <form onSubmit={handleSignup} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="John Doe" required autoFocus />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required />

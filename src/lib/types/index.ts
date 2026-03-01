@@ -322,6 +322,7 @@ export interface Organization {
   slug?: string;
   description?: string;
   logoURL?: string;
+  anthropicKey?: string;
   createdBy?: string;
   createdAt?: Date;
   updatedAt?: Date;

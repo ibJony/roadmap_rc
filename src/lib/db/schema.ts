@@ -119,6 +119,7 @@ export interface DBLocalOrganization {
   slug?: string;
   description?: string;
   logoURL?: string;
+  anthropicKey?: string;
   createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -188,6 +189,9 @@ export class RoadmapDB extends Dexie {
       localOrgMembers: 'id, organizationId, userId',
       localTeamMembers: 'id, teamId, userId',
     });
+
+    // Version 8 - Add anthropicKey to organizations (non-indexed field, schema unchanged)
+    this.version(8).stores({});
   }
 }
 

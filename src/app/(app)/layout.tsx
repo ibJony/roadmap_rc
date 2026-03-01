@@ -8,11 +8,15 @@ import { Toast } from '@/components/layout/Toast';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { useOrgStore } from '@/lib/stores/org-store';
 import { useTheme } from '@/hooks/use-theme';
+import { validateSession } from '@/lib/supabase';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const loadProjects = useRoadmapStore((s) => s.loadProjects);
-  const { hasCompletedOnboarding, isOfflineMode, userId } = useAuthStore();
+  const loadOrganizations = useOrgStore((s) => s.loadOrganizations);
+  const selectOrg = useOrgStore((s) => s.selectOrg);
+  const { hasCompletedOnboarding, isOfflineMode, userId, supabaseUrl, supabaseKey, setUser, logout } = useAuthStore();
   useTheme(); // Sync light/dark/system theme on mount and changes
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
@@ -24,6 +28,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (useAuthStore.persist.hasHydrated()) setHydrated(true);
     return unsub;
   }, []);
+
+  // Validate Supabase session on mount (catch stale/expired tokens)
+  useEffect(() => {
+    if (!hydrated || isOfflineMode || !userId || !supabaseUrl || !supabaseKey) return;
+
+    validateSession(supabaseUrl, supabaseKey).then((user) => {
+      if (user) {
+        // Refresh user info from the actual session
+        setUser(user.id, user.email ?? null);
+      } else {
+        // Session expired or invalid — force re-login
+        logout();
+        router.replace('/auth/login');
+      }
+    });
+  }, [hydrated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auth guard: redirect if not onboarded or not authenticated
   useEffect(() => {
@@ -41,7 +61,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     // Authenticated — load data
     loadProjects();
-  }, [hydrated, hasCompletedOnboarding, isOfflineMode, userId, router, loadProjects]);
+    loadOrganizations().then(() => {
+      const { organizations: orgs, selectedOrg: sel } = useOrgStore.getState();
+      if (!sel && orgs.length > 0) {
+        selectOrg(orgs[0]);
+      }
+    });
+  }, [hydrated, hasCompletedOnboarding, isOfflineMode, userId, router, loadProjects, loadOrganizations, selectOrg]);
 
   if (!hydrated) {
     return (

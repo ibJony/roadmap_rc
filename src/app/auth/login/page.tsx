@@ -10,6 +10,7 @@ import { useToastStore } from '@/lib/stores/toast-store';
 import { getSupabaseClient } from '@/lib/supabase';
 import { LogIn, Map } from 'lucide-react';
 import Link from 'next/link';
+import { SupabaseConfigPanel } from '@/components/auth/SupabaseConfigPanel';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -53,6 +54,8 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold">RMLAB Roadmap</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sign in to your account</p>
         </div>
+
+        <SupabaseConfigPanel />
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">

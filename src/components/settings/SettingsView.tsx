@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Sun,
   Moon,
@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
+import { useOrgStore } from '@/lib/stores/org-store';
 import { useToastStore } from '@/lib/stores/toast-store';
 
 // ── Section wrapper ──────────────────────────────────────────────────────────
@@ -78,8 +79,6 @@ export function SettingsView() {
   const {
     appearance,
     setAppearance,
-    anthropicKey,
-    setAnthropicKey,
     supabaseUrl,
     supabaseKey,
     setSupabaseConfig,
@@ -88,10 +87,13 @@ export function SettingsView() {
   } = useAuthStore();
 
   const { exportToJSON, importFromJSON } = useRoadmapStore();
+  const { selectedOrg, setOrgAnthropicKey } = useOrgStore();
   const { showSuccess, showError } = useToastStore();
 
+  const orgAnthropicKey = selectedOrg?.anthropicKey ?? '';
+
   // Local form state
-  const [localAnthropicKey, setLocalAnthropicKey] = useState(anthropicKey);
+  const [localAnthropicKey, setLocalAnthropicKey] = useState(orgAnthropicKey);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
   const [localSupabaseUrl, setLocalSupabaseUrl] = useState(supabaseUrl);
   const [localSupabaseKey, setLocalSupabaseKey] = useState(supabaseKey);
@@ -101,11 +103,19 @@ export function SettingsView() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync local form state when org or store values change
+  useEffect(() => { setLocalAnthropicKey(orgAnthropicKey); }, [orgAnthropicKey]);
+  useEffect(() => { setLocalSupabaseUrl(supabaseUrl); }, [supabaseUrl]);
+  useEffect(() => { setLocalSupabaseKey(supabaseKey); }, [supabaseKey]);
+
   // ── Handlers ───────────────────────────────────────────────────────────────
 
-  function handleSaveAnthropicKey() {
-    setAnthropicKey(localAnthropicKey.trim());
-    showSuccess('Anthropic API key saved');
+  async function handleSaveAnthropicKey() {
+    if (selectedOrg?.id) {
+      await setOrgAnthropicKey(selectedOrg.id, localAnthropicKey.trim());
+    } else {
+      showError('Select an organization first');
+    }
   }
 
   function handleSaveSupabase() {
@@ -205,8 +215,8 @@ export function SettingsView() {
 
         {/* ── API Keys ──────────────────────────────────────────────── */}
         <Section
-          title="API Keys"
-          description="Your Anthropic API key enables the AI assistant. It is stored locally only."
+          title="AI Assistant (per organization)"
+          description={selectedOrg ? `Anthropic API key for "${selectedOrg.name}". Each organization uses its own credits.` : 'Select an organization in Teams to configure its API key.'}
         >
           <div className="space-y-2">
             <Label htmlFor="anthropic-key">Anthropic API Key</Label>
@@ -219,6 +229,7 @@ export function SettingsView() {
                   value={localAnthropicKey}
                   onChange={(e) => setLocalAnthropicKey(e.target.value)}
                   className="pr-10 font-mono text-sm"
+                  disabled={!selectedOrg}
                 />
                 <button
                   type="button"
@@ -231,7 +242,7 @@ export function SettingsView() {
               </div>
               <Button
                 onClick={handleSaveAnthropicKey}
-                disabled={localAnthropicKey === anthropicKey}
+                disabled={!selectedOrg || localAnthropicKey === orgAnthropicKey}
               >
                 Save
               </Button>

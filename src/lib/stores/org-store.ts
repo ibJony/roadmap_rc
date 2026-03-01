@@ -18,6 +18,7 @@ interface OrgState {
   addMember: (orgId: string, userId: string, role: OrgRole, email?: string) => Promise<void>;
   removeMember: (memberId: string, orgId: string) => Promise<void>;
   updateMemberRole: (member: OrganizationMember) => Promise<void>;
+  setOrgAnthropicKey: (orgId: string, key: string) => Promise<void>;
 }
 
 export const useOrgStore = create<OrgState>((set, get) => ({
@@ -117,6 +118,20 @@ export const useOrgStore = create<OrgState>((set, get) => ({
       set(s => ({ members: s.members.map(m => m.id === member.id ? member : m) }));
     } catch {
       useToastStore.getState().showError('Failed to update member role');
+    }
+  },
+
+  setOrgAnthropicKey: async (orgId, key) => {
+    try {
+      const { db } = await import('../db/schema');
+      await db.localOrganizations.update(orgId, { anthropicKey: key, updatedAt: new Date() });
+      set(s => ({
+        organizations: s.organizations.map(o => o.id === orgId ? { ...o, anthropicKey: key } : o),
+        selectedOrg: s.selectedOrg?.id === orgId ? { ...s.selectedOrg, anthropicKey: key } : s.selectedOrg,
+      }));
+      useToastStore.getState().showSuccess('Anthropic API key saved for this organization');
+    } catch {
+      useToastStore.getState().showError('Failed to save API key');
     }
   },
 }));

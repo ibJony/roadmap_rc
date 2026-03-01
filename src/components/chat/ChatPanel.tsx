@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/lib/stores/auth-store';
+import { useOrgStore } from '@/lib/stores/org-store';
 import { useToastStore } from '@/lib/stores/toast-store';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ interface ChatPanelProps {
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
-  const { anthropicKey } = useAuthStore();
+  const anthropicKey = useOrgStore((s) => s.selectedOrg?.anthropicKey ?? '');
   const { showError } = useToastStore();
 
   const [messages, setMessages] = useState<Message[]>([]);

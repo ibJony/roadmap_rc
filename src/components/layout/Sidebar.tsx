@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Map,
   Lightbulb,
@@ -15,9 +15,16 @@ import {
   Menu,
   X,
   FolderOpen,
+  LogOut,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
+import { useAuthStore } from '@/lib/stores/auth-store';
+import { useOrgStore } from '@/lib/stores/org-store';
+import { useTeamStore } from '@/lib/stores/team-store';
+import { signOutAndClear } from '@/lib/supabase';
 
 interface NavItem {
   label: string;
@@ -38,7 +45,22 @@ const NAV_ITEMS: NavItem[] = [
 
 function SidebarNav({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const selectedProject = useRoadmapStore((s) => s.selectedProject);
+  const { userEmail, isOfflineMode, supabaseUrl, supabaseKey, logout } = useAuthStore();
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOutAndClear(supabaseUrl, supabaseKey);
+    // Clear all stores to prevent data leaking between sessions
+    useRoadmapStore.setState({ projects: [], selectedProject: null, cards: [], selectedCard: null, isEditing: false, editingStage: null, filterOrgId: null });
+    useOrgStore.setState({ organizations: [], selectedOrg: null, members: [] });
+    useTeamStore.setState({ teams: [], selectedTeam: null, teamMembers: [] });
+    logout();
+    onNavClick?.();
+    router.replace('/auth/login');
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -77,7 +99,7 @@ function SidebarNav({ onNavClick }: { onNavClick?: () => void }) {
       </nav>
 
       {/* Compost link */}
-      <div className="px-2 pb-4 border-t border-border pt-3">
+      <div className="px-2 border-t border-border pt-3">
         <Link
           href="/compost"
           onClick={onNavClick}
@@ -91,6 +113,29 @@ function SidebarNav({ onNavClick }: { onNavClick?: () => void }) {
           <Trash2 className="size-4 shrink-0" />
           Compost
         </Link>
+      </div>
+
+      {/* User section */}
+      <div className="px-2 pb-3 border-t border-border pt-3">
+        <div className="flex items-center gap-2 px-3 py-1.5 mb-1">
+          {isOfflineMode ? (
+            <WifiOff className="size-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <Wifi className="size-3.5 shrink-0 text-green-500" />
+          )}
+          <span className="text-xs text-muted-foreground truncate">
+            {isOfflineMode ? 'Offline mode' : (userEmail ?? 'Signed in')}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+        >
+          <LogOut className="size-4 shrink-0" />
+          {signingOut ? 'Signing out...' : 'Sign Out'}
+        </button>
       </div>
     </div>
   );

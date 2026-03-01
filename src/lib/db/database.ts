@@ -359,7 +359,8 @@ export const DatabaseService = {
     const rows = await db.localOrganizations.toArray();
     return rows.map(r => ({
       id: r.id, name: r.name, slug: r.slug, description: r.description,
-      logoURL: r.logoURL, createdBy: r.createdBy, createdAt: r.createdAt, updatedAt: r.updatedAt,
+      logoURL: r.logoURL, anthropicKey: r.anthropicKey, createdBy: r.createdBy,
+      createdAt: r.createdAt, updatedAt: r.updatedAt,
     }));
   },
 
@@ -368,7 +369,7 @@ export const DatabaseService = {
     const id = org.id ?? crypto.randomUUID();
     await db.localOrganizations.put({
       id, name: org.name, slug: org.slug, description: org.description,
-      logoURL: org.logoURL, createdBy: org.createdBy,
+      logoURL: org.logoURL, anthropicKey: org.anthropicKey, createdBy: org.createdBy,
       createdAt: org.createdAt ?? now, updatedAt: now,
     });
   },
