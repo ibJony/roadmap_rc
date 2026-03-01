@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const DEFAULT_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+const DEFAULT_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+
 interface AuthState {
   isOfflineMode: boolean;
   supabaseUrl: string;
@@ -20,9 +23,9 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isOfflineMode: true,
-      supabaseUrl: '',
-      supabaseKey: '',
+      isOfflineMode: !DEFAULT_SUPABASE_URL,
+      supabaseUrl: DEFAULT_SUPABASE_URL,
+      supabaseKey: DEFAULT_SUPABASE_ANON_KEY,
       userId: null,
       userEmail: null,
       appearance: 'system',
