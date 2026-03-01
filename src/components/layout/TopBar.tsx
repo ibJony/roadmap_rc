@@ -56,7 +56,11 @@ function AppearanceIcon({ appearance }: { appearance: 'system' | 'light' | 'dark
   }
 }
 
-export function TopBar() {
+interface TopBarProps {
+  onChatToggle?: () => void;
+}
+
+export function TopBar({ onChatToggle }: TopBarProps) {
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
 
@@ -126,10 +130,8 @@ export function TopBar() {
         )}
 
         {/* AI Chat toggle */}
-        <Button variant="ghost" size="icon-sm" asChild>
-          <a href="/chat" aria-label="Open AI Chat">
-            <MessageSquare className="size-4" />
-          </a>
+        <Button variant="ghost" size="icon-sm" aria-label="Open AI Chat" onClick={onChatToggle}>
+          <MessageSquare className="size-4" />
         </Button>
 
         {/* Light/dark/system appearance toggle */}

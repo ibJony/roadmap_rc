@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { Toast } from '@/components/layout/Toast';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useTheme(); // Sync light/dark/system theme on mount and changes
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Wait for Zustand to hydrate
   useEffect(() => {
@@ -57,12 +59,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        <TopBar />
+        <TopBar onChatToggle={() => setIsChatOpen(true)} />
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
       <Toast />
+      <ChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
 }

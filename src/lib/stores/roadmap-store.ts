@@ -11,9 +11,11 @@ interface RoadmapState {
   isEditing: boolean;
   editingStage: CardStage | null;
   isLoading: boolean;
+  filterOrgId: string | null;
 
   // Project operations
-  loadProjects: () => Promise<void>;
+  loadProjects: (orgId?: string | null) => Promise<void>;
+  setFilterOrgId: (orgId: string | null) => void;
   selectProject: (project: Project) => Promise<void>;
   createProject: (p: Omit<Project, 'id'>) => Promise<void>;
   updateProject: (p: Project) => Promise<void>;
@@ -49,17 +51,37 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
   isEditing: false,
   editingStage: null,
   isLoading: false,
+  filterOrgId: null,
 
-  loadProjects: async () => {
+  setFilterOrgId: (orgId) => {
+    set({ filterOrgId: orgId });
+    get().loadProjects(orgId);
+  },
+
+  loadProjects: async (orgId) => {
     set({ isLoading: true });
     try {
-      const defaultProject = await DatabaseService.ensureDefaultProject();
-      const projects = await DatabaseService.getAllProjects();
-      const selected = get().selectedProject ?? projects.find(p => p.id === defaultProject.id) ?? projects[0];
+      const filterOrg = orgId !== undefined ? orgId : get().filterOrgId;
+      let projects: Project[];
+      if (filterOrg) {
+        projects = await DatabaseService.getProjectsByOrg(filterOrg);
+      } else {
+        const defaultProject = await DatabaseService.ensureDefaultProject();
+        projects = await DatabaseService.getAllProjects();
+        // If no filter, still need the default
+        if (projects.length === 0) {
+          projects = [defaultProject];
+        }
+      }
+      const selected = get().selectedProject && projects.find(p => p.id === get().selectedProject?.id)
+        ? get().selectedProject
+        : projects[0] ?? null;
       set({ projects, selectedProject: selected });
       if (selected) {
         const cards = await DatabaseService.getCards(selected.id!);
         set({ cards });
+      } else {
+        set({ cards: [] });
       }
     } finally {
       set({ isLoading: false });

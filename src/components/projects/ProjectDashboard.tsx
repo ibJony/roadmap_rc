@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Archive, Trash2, FolderOpen, MoreHorizontal } from 'lucide-react';
+import { Plus, Archive, Trash2, FolderOpen, MoreHorizontal, Building2, Check, ChevronDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
+import { useOrgStore } from '@/lib/stores/org-store';
 import type { Project } from '@/lib/types';
 import { PROJECT_COLORS } from '@/lib/types';
 
@@ -95,7 +96,7 @@ function CreateProjectDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { createProject } = useRoadmapStore();
+  const { createProject, filterOrgId } = useRoadmapStore();
   const [values, setValues] = useState<ProjectFormValues>({
     name: '',
     description: '',
@@ -112,6 +113,7 @@ function CreateProjectDialog({
       description: values.description.trim() || undefined,
       colorHex: values.colorHex,
       isArchived: false,
+      organizationId: filterOrgId ?? undefined,
     });
     setSaving(false);
     setValues({ name: '', description: '', colorHex: PROJECT_COLORS[0].hex });
@@ -324,12 +326,21 @@ function CreateCard({ onClick }: { onClick: () => void }) {
 // ── Main component ───────────────────────────────────────────────────────────
 
 export function ProjectDashboard() {
-  const { projects } = useRoadmapStore();
+  const { projects, filterOrgId, setFilterOrgId } = useRoadmapStore();
+  const { organizations, loadOrganizations } = useOrgStore();
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
 
+  // Load orgs on mount if not loaded
+  React.useEffect(() => {
+    if (organizations.length === 0) {
+      loadOrganizations();
+    }
+  }, [organizations.length, loadOrganizations]);
+
   const active = projects.filter((p) => !p.isArchived);
   const archived = projects.filter((p) => p.isArchived);
+  const selectedOrgName = organizations.find((o) => o.id === filterOrgId)?.name;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -344,12 +355,48 @@ export function ProjectDashboard() {
             <p className="text-sm text-muted-foreground mt-1">
               {active.length} active project{active.length !== 1 ? 's' : ''}
               {archived.length > 0 && `, ${archived.length} archived`}
+              {selectedOrgName && ` in ${selectedOrgName}`}
             </p>
           </div>
-          <Button onClick={() => setShowCreate(true)}>
-            <Plus className="size-4 mr-2" />
-            New Project
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Org filter */}
+            {organizations.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Building2 className="size-3.5" />
+                    <span className="truncate max-w-[140px]">
+                      {selectedOrgName ?? 'All Organizations'}
+                    </span>
+                    <ChevronDown className="size-3 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[180px]">
+                  <DropdownMenuItem onClick={() => setFilterOrgId(null)} className="gap-2">
+                    <FolderOpen className="size-3.5" />
+                    All Projects
+                    {!filterOrgId && <Check className="size-3.5 ml-auto text-primary" />}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {organizations.map((org) => (
+                    <DropdownMenuItem
+                      key={org.id}
+                      onClick={() => setFilterOrgId(org.id!)}
+                      className="gap-2"
+                    >
+                      <Building2 className="size-3.5" />
+                      <span className="flex-1 truncate">{org.name}</span>
+                      {filterOrgId === org.id && <Check className="size-3.5 text-primary" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus className="size-4 mr-2" />
+              New Project
+            </Button>
+          </div>
         </div>
 
         {/* Active projects */}

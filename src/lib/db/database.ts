@@ -25,6 +25,16 @@ export const DatabaseService = {
     }));
   },
 
+  async getProjectsByOrg(orgId: string): Promise<Project[]> {
+    const rows = await db.projects.where('organizationId').equals(orgId).toArray();
+    return rows.map(r => ({
+      id: r.id, name: r.name, description: r.description,
+      colorHex: r.colorHex, isArchived: toBool(r.isArchived),
+      createdAt: r.createdAt, updatedAt: r.updatedAt,
+      organizationId: r.organizationId, teamId: r.teamId, syncUUID: r.syncUUID,
+    }));
+  },
+
   async createProject(p: Omit<Project, 'id'>): Promise<number> {
     const now = new Date();
     return db.projects.add({

@@ -14,6 +14,7 @@ import {
   Trash2,
   Menu,
   X,
+  FolderOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRoadmapStore } from '@/lib/stores/roadmap-store';
@@ -25,6 +26,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'Projects',   href: '/projects',   icon: FolderOpen },
   { label: 'Roadmap',    href: '/roadmap',    icon: Map },
   { label: 'Ideas',      href: '/ideas',      icon: Lightbulb },
   { label: 'Priorities', href: '/priorities', icon: Flag },
